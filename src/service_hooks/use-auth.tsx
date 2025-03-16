@@ -28,7 +28,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [user, setUser] = useState<UserType | undefined>(undefined);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const userApiService = process.env.NEXT_PUBLIC_AUTH_API_URL;
+  const apiEndPoint = process.env.NEXT_PUBLIC_AUTH_API_URL;
 
   useEffect(() => {
     getCurrentAuth();
@@ -37,7 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const getCurrentAuth = async (credit: boolean = false) => {
     setIsLoading(true);
     try {
-      const response = await axios.get(`${userApiService}/api/auth/google/login_user`, {
+      const response = await axios.get(`${apiEndPoint}/api/auth/google/login_user`, {
         withCredentials: true,
         params: {
           credit: credit ? "true" : null,
@@ -60,7 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const redirectUrl = encodeURIComponent(
       `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
     );
-    window.location.href = `${userApiService}/api/auth/google/profile?redirect=${redirectUrl}`;
+    window.location.href = `${apiEndPoint}/api/auth/google/profile?redirect=${redirectUrl}`;
   };
 
   const loginGoogleCalendar = async () => {
@@ -69,12 +69,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
     );
 
-    window.location.href = `${userApiService}/api/auth/google/calendar?redirect=${redirectUrl}`;
+    window.location.href = `${apiEndPoint}/api/auth/google/calendar?redirect=${redirectUrl}`;
   };
 
   const logoutUser = async () => {
     const redirectUrl = encodeURIComponent(process.env.NEXT_PUBLIC_APP_URL!);
-    window.location.href = `${userApiService}/api/auth/logout?redirect=${redirectUrl}`;
+    window.location.href = `${apiEndPoint}/api/auth/logout?redirect=${redirectUrl}`;
   };
 
   return (

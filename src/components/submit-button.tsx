@@ -22,7 +22,7 @@ const SubmitButton = React.forwardRef<HTMLButtonElement, SubmitButtonProps>(
          ${
            isLoading
              ? ""
-             : "bg-blue-600 shadow-lg shadow-blue-200 hover:bg-blue-700"
+             : "bg-blue-600 shadow shadow-blue-200 hover:bg-blue-700"
          }`}
       >
         {isLoading ? (

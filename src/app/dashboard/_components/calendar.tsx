@@ -1,13 +1,25 @@
 import { ComponentProps, FC, useState } from "react";
 import { ChevronLeft, ChevronRight, Clock, Users } from "lucide-react";
+import { useQuery, UseQueryResult } from "@tanstack/react-query";
+import useCalender, {
+  CalendarResponseType,
+} from "@/service_hooks/use-calendar";
+import MeetingCard from "./meeting-card";
+import { HorizontalScroll } from "@/components/horizontal-scroll";
+import { VerticalScroll } from "@/components/vertical-scroll";
 
 interface CalendarProps extends ComponentProps<"div"> {}
 
 const Calendar: FC<CalendarProps> = ({ className, ...props }) => {
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [isScheduled, setIsScheduled] = useState(false);
-  const [showNotification, setShowNotification] = useState(false);
+
+  const { getMeetings } = useCalender();
+
+  const getCalendarsQuery = useQuery({
+    queryKey: ["google-calendar-meetings", selectedDate],
+    queryFn: () => getMeetings(selectedDate.toISOString().split("T")[0]),
+  }) as UseQueryResult<Array<CalendarResponseType>, Error>;
 
   const handlePrevMonth = () => {
     setCurrentMonth(
@@ -39,15 +51,6 @@ const Calendar: FC<CalendarProps> = ({ className, ...props }) => {
     return days;
   };
 
-  const getMeetingsForDate = (date: Date) => {
-    return meetings.filter(
-      (meeting) =>
-        meeting.date.getDate() === date.getDate() &&
-        meeting.date.getMonth() === date.getMonth() &&
-        meeting.date.getFullYear() === date.getFullYear()
-    );
-  };
-
   const formatDate = (date: Date) => {
     return date.toLocaleDateString("en-US", {
       month: "long",
@@ -55,71 +58,6 @@ const Calendar: FC<CalendarProps> = ({ className, ...props }) => {
       year: "numeric",
     });
   };
-
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsScheduled(true);
-    setShowNotification(true);
-    setTimeout(() => {
-      setIsScheduled(false);
-      setShowNotification(false);
-    }, 3000);
-  };
-
-  const meetings = [
-    {
-      id: 1,
-      title: "Team Standup",
-      date: new Date(2024, 2, 20, 10, 0),
-      participants: ["john@example.com", "sarah@example.com"],
-    },
-    {
-      id: 2,
-      title: "Project Review",
-      date: new Date(2024, 2, 20, 14, 30),
-      participants: ["mike@example.com", "anna@example.com"],
-    },
-    {
-      id: 3,
-      title: "Client Meeting",
-      date: new Date(2024, 2, 22, 11, 0),
-      participants: ["client@example.com"],
-    },
-  ];
-  
-  const upcomingMeetings = [
-    {
-      id: 4,
-      title: "Weekly Team Sync",
-      date: new Date(2024, 2, 25, 9, 0),
-      duration: "1h",
-      participants: 5,
-      type: "Recurring",
-    },
-    {
-      id: 5,
-      title: "Product Demo",
-      date: new Date(2024, 2, 26, 14, 0),
-      duration: "45m",
-      participants: 8,
-      type: "One-time",
-    },
-    {
-      id: 6,
-      title: "Sprint Planning",
-      date: new Date(2024, 2, 27, 10, 30),
-      duration: "2h",
-      participants: 12,
-      type: "Recurring",
-    },
-  ];
 
   return (
     <div className="bg-white rounded-2xl shadow-xl p-6 flex-1">
@@ -163,23 +101,31 @@ const Calendar: FC<CalendarProps> = ({ className, ...props }) => {
           <button
             key={index}
             onClick={() => day && setSelectedDate(day)}
-            className={`
-      aspect-square p-2 rounded-lg text-sm relative
-      ${!day ? "invisible" : "hover:bg-gray-100"}
+            className={`cursor-pointer aspect-square p-2 rounded-lg text-sm relative ${
+              !day ? "invisible" : "hover:bg-gray-100"
+            }
       ${
         selectedDate && day && selectedDate.getDate() === day.getDate()
           ? "bg-blue-100"
           : ""
-      }
-      ${day && getMeetingsForDate(day).length > 0 ? "font-semibold" : ""}
-    `}
+      }`}
           >
             {day?.getDate()}
-            {day && getMeetingsForDate(day).length > 0 && (
-              <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-blue-600 rounded-full" />
-            )}
           </button>
         ))}
+      </div>
+
+      {/* Upcoming Meetings */}
+      <div className="mt-6 pt-6 border-t border-gray-200">
+        <h3 className="text-lg font-semibold mb-4">
+          Upcoming Meetings for {formatDate(selectedDate)}
+        </h3>
+        <HorizontalScroll className="w-full">
+          {getCalendarsQuery.data &&
+            getCalendarsQuery.data.map((calendar, index) => (
+              <MeetingCard calendar={calendar} key={index} />
+            ))}
+        </HorizontalScroll>
       </div>
 
       {/* Meeting List */}
@@ -188,78 +134,19 @@ const Calendar: FC<CalendarProps> = ({ className, ...props }) => {
           <h3 className="text-lg font-semibold mb-4">
             Meetings for {formatDate(selectedDate)}
           </h3>
-          <div className="space-y-4">
-            {getMeetingsForDate(selectedDate).length > 0 ? (
-              getMeetingsForDate(selectedDate).map((meeting) => (
-                <div key={meeting.id} className="bg-gray-50 p-4 rounded-xl">
-                  <div className="font-medium text-gray-900">
-                    {meeting.title}
-                  </div>
-                  <div className="text-sm text-gray-500 mt-1">
-                    {formatTime(meeting.date)}
-                  </div>
-                  <div className="text-sm text-gray-500 mt-1">
-                    {meeting.participants.join(", ")}
-                  </div>
-                </div>
+          <VerticalScroll className="space-y-4" height="45vh">
+            {getCalendarsQuery.data ? (
+              getCalendarsQuery.data.map((calendar, index) => (
+                <MeetingCard calendar={calendar} key={index} />
               ))
             ) : (
               <p className="text-gray-500 text-sm">
                 No meetings scheduled for this day
               </p>
             )}
-          </div>
+          </VerticalScroll>
         </div>
       )}
-
-      {/* Upcoming Meetings */}
-      <div className="mt-6 pt-6 border-t border-gray-200">
-        <h3 className="text-lg font-semibold mb-4">Upcoming Meetings</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {upcomingMeetings.map((meeting) => (
-            <div
-              key={meeting.id}
-              className="bg-white border border-gray-200 p-4 rounded-xl hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <h4 className="font-medium text-gray-900">{meeting.title}</h4>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {meeting.date.toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })}{" "}
-                    at{" "}
-                    {meeting.date.toLocaleTimeString("en-US", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
-                </div>
-                <span
-                  className={`text-xs px-2 py-1 rounded-full ${
-                    meeting.type === "Recurring"
-                      ? "bg-blue-100 text-blue-700"
-                      : "bg-gray-100 text-gray-700"
-                  }`}
-                >
-                  {meeting.type}
-                </span>
-              </div>
-              <div className="flex items-center gap-4 mt-3 text-sm text-gray-600">
-                <div className="flex items-center gap-1">
-                  <Clock className="w-4 h-4" />
-                  {meeting.duration}
-                </div>
-                <div className="flex items-center gap-1">
-                  <Users className="w-4 h-4" />
-                  {meeting.participants} participants
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 };

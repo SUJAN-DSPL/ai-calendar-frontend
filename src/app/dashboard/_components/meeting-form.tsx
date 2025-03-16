@@ -9,6 +9,9 @@ import {
   CreateMeetingType,
 } from "@/schemas/create-meeting-schema";
 import { FieldErrors, useForm } from "react-hook-form";
+import { useMutation, UseMutationResult } from "@tanstack/react-query";
+import useCalender from "@/service_hooks/use-calendar";
+import { toast } from "react-toastify";
 
 interface MeetingFormProps extends ComponentProps<"form"> {}
 
@@ -23,7 +26,6 @@ const MeetingForm: FC<MeetingFormProps> = ({ className, ...props }) => {
 
   useEffect(() => {
     if (startDate && startTime) {
-      console.log(startDate, startTime);
       setValue("start_time", `${startDate}T${startTime}:00Z`);
     }
 
@@ -43,13 +45,12 @@ const MeetingForm: FC<MeetingFormProps> = ({ className, ...props }) => {
     register,
     handleSubmit,
     formState: { isDirty, errors },
-    getValues,
     setValue,
   } = useForm<CreateMeetingType>({
     defaultValues: {
       summary: "",
       description: "",
-      timezone: "",
+      time_zone: "",
       start_time: "",
       end_time: "",
       attendees: [],
@@ -58,12 +59,33 @@ const MeetingForm: FC<MeetingFormProps> = ({ className, ...props }) => {
     resolver: yupResolver(createMeetingSchema),
   });
 
+  const { createMeeting } = useCalender();
+
+  const createMeetingMutation = useMutation({
+    mutationFn: createMeeting,
+    onSuccess: (data: { status: string; event_id: string }) => {
+      toast.success(
+        "Your meeting have schedule, all participants will be notified soon"
+      );
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response.data.error;
+      toast.error(errorMessage ?? "Something Went Wrong");
+    },
+  }) as UseMutationResult<
+    { status: string; event_id: string },
+    Error,
+    CreateMeetingType,
+    unknown
+  >;
+
   return (
     <div className="bg-white rounded-2xl shadow-xl p-6 flex-1">
+      <h2 className="text-xl font-semibold text-gray-900"></h2>
       <form
-        className={cn("space-y-4", className)}
+        className={cn("space-y-4 mt-2", className)}
         {...props}
-        onSubmit={handleSubmit((data) => console.log(data))}
+        onSubmit={handleSubmit((data) => createMeetingMutation.mutate(data))}
       >
         <div>
           <label
@@ -89,7 +111,7 @@ const MeetingForm: FC<MeetingFormProps> = ({ className, ...props }) => {
           >
             Timezone
           </label>
-          <TimezoneSelector onchange={(value) => setValue("timezone", value)} />
+          <TimezoneSelector onchange={(value) => setValue("time_zone", value)} />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -181,7 +203,10 @@ const MeetingForm: FC<MeetingFormProps> = ({ className, ...props }) => {
             htmlFor="email"
             className="block text-sm font-medium text-gray-700 mb-1"
           >
-            Participants
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-blue-600" />
+              Participants
+            </div>
           </label>
 
           {attendees.map((email, index) => (
@@ -228,7 +253,7 @@ const MeetingForm: FC<MeetingFormProps> = ({ className, ...props }) => {
             className="block text-sm font-medium text-gray-700 mb-1"
           >
             <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-blue-600" />
+              {/* <Users className="w-4 h-4 text-blue-600" /> */}
               Description
             </div>
           </label>
@@ -237,7 +262,6 @@ const MeetingForm: FC<MeetingFormProps> = ({ className, ...props }) => {
             className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
             placeholder="Write the description about the meeting"
             rows={3}
-            required
             {...register("description")}
           />
         </div>
@@ -247,7 +271,6 @@ const MeetingForm: FC<MeetingFormProps> = ({ className, ...props }) => {
             onChange={(e) => setValue("video_conference", e.target.checked)}
             id="video-conference"
             type="checkbox"
-            // checked={getValues("video_conference")}
             className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
           />
           <label
@@ -258,7 +281,11 @@ const MeetingForm: FC<MeetingFormProps> = ({ className, ...props }) => {
           </label>
         </div>
 
-        <SubmitButton type="submit" isLoading={false}>
+        <SubmitButton
+          type="submit"
+          disabled={isDirty}
+          isLoading={createMeetingMutation.isPending}
+        >
           Schedule Meeting
         </SubmitButton>
 
@@ -277,7 +304,7 @@ interface ErrorCardProps extends ComponentProps<"div"> {
     description: string;
     start_time: string;
     end_time: string;
-    timezone: string;
+    time_zone: string;
     video_conference: NonNullable<boolean | undefined>;
   }>;
 }
@@ -289,8 +316,10 @@ const ErrorCard: FC<ErrorCardProps> = ({ errors, className }) => {
 
   return errorMessages.length ? (
     <div className=" border border-red-500 rounded-md p-3 space-y-2">
-      {errorMessages.map((error) => (
-        <li className=" text-red-500">{error}</li>
+      {errorMessages.map((error, index) => (
+        <li key={index} className=" text-red-500">
+          {error}
+        </li>
       ))}
     </div>
   ) : (

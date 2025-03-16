@@ -3,8 +3,8 @@ import * as yup from "yup";
 
 export const createMeetingSchema = yup
   .object({
-    summary: yup.string().max(100).required(),
-    description: yup.string().max(100),
+    summary: yup.string().min(5).max(100).required(),
+    description: yup.string().min(5).max(100),
     start_time: yup
       .string()
       .matches(
@@ -28,7 +28,7 @@ export const createMeetingSchema = yup
           return new Date(value).getTime() > new Date(start_time).getTime();
         }
       ),
-    timezone: yup.string().max(50).required(),
+    time_zone: yup.string().min(5).max(50).required(),
     attendees: yup.array().of(yup.string().email()).min(1).required(),
     video_conference: yup.boolean().required(),
   })

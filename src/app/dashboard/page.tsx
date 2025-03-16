@@ -28,12 +28,12 @@ const Page = () => {
         </div>
 
         {/* tools */}
-        <div className="md:flex justify-between gap-6">
-          <div className="md:flex justify-between w-5xl gap-6">
+        <div className="grid grid-cols-[67%_33%] gap-6">
+          <div className="grid grid-cols-2 gap-6">
             <Calendar />
             <MeetingForm />
           </div>
-          <div className="space-y-6 flex-1">
+          <div className="space-y-6 ">
             <AiChatAgent />
             <Tips />
             <Features />

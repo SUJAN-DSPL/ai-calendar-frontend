@@ -1,33 +1,28 @@
-import { AlertCircle } from "lucide-react";
+import { Check } from "lucide-react";
 import { ComponentProps, FC } from "react";
 
 interface FeaturesProps extends ComponentProps<"div"> {}
 
 const Features: FC<FeaturesProps> = () => {
   return (
-    <div className="bg-white rounded-2xl shadow-xl p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-        <AlertCircle className="w-5 h-5 text-blue-600" />
-        Quick Tips
-      </h2>
+    <div className="bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl shadow-xl p-6 text-white">
+      <h2 className="text-lg font-semibold mb-4">Meeting Features</h2>
       <ul className="space-y-3">
-        <li className="flex items-start gap-2 text-sm text-gray-600">
-          <div className="w-5 h-5 flex items-center justify-center mt-0.5">
-            <div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
-          </div>
-          Meeting links are automatically generated
+        <li className="flex items-center gap-2 text-sm opacity-90">
+          <Check className="w-4 h-4" />
+          HD Video Quality
         </li>
-        <li className="flex items-start gap-2 text-sm text-gray-600">
-          <div className="w-5 h-5 flex items-center justify-center mt-0.5">
-            <div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
-          </div>
-          Calendar invitations sent instantly
+        <li className="flex items-center gap-2 text-sm opacity-90">
+          <Check className="w-4 h-4" />
+          Screen Sharing
         </li>
-        <li className="flex items-start gap-2 text-sm text-gray-600">
-          <div className="w-5 h-5 flex items-center justify-center mt-0.5">
-            <div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
-          </div>
-          Add meeting agenda in calendar invite
+        <li className="flex items-center gap-2 text-sm opacity-90">
+          <Check className="w-4 h-4" />
+          Chat Features
+        </li>
+        <li className="flex items-center gap-2 text-sm opacity-90">
+          <Check className="w-4 h-4" />
+          Recording Options
         </li>
       </ul>
     </div>
