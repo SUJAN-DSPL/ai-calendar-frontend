@@ -1,12 +1,10 @@
-import { ComponentProps, FC, useState } from "react";
-import { ChevronLeft, ChevronRight, Clock, Users } from "lucide-react";
-import { useQuery, UseQueryResult } from "@tanstack/react-query";
-import useCalender, {
-  CalendarResponseType,
-} from "@/service_hooks/use-calendar";
-import MeetingCard from "./meeting-card";
+import { ComponentProps, FC, useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import MeetingCard, { MeetingSkeletonCard } from "./meeting-card";
 import { HorizontalScroll } from "@/components/horizontal-scroll";
 import { VerticalScroll } from "@/components/vertical-scroll";
+import useDate from "@/hooks/use-date";
+import { useCalender } from "@/api_hooks/use-calendar";
 
 interface CalendarProps extends ComponentProps<"div"> {}
 
@@ -14,12 +12,15 @@ const Calendar: FC<CalendarProps> = ({ className, ...props }) => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
-  const { getMeetings } = useCalender();
+  const { getCalendarsQuery } = useCalender();
+  const { formatDescribableDate, getDaysInMonth, formatStandardizedDate } =
+    useDate();
+  const { setStartDateTime, setEndDateTime } = useCalender();
 
-  const getCalendarsQuery = useQuery({
-    queryKey: ["google-calendar-meetings", selectedDate],
-    queryFn: () => getMeetings(selectedDate.toISOString().split("T")[0]),
-  }) as UseQueryResult<Array<CalendarResponseType>, Error>;
+  useEffect(() => {
+    setStartDateTime(`${formatStandardizedDate(selectedDate)}T00:00:00Z`);
+    setEndDateTime(`${formatStandardizedDate(selectedDate)}T23:59:59Z`);
+  }, [selectedDate]);
 
   const handlePrevMonth = () => {
     setCurrentMonth(
@@ -33,31 +34,11 @@ const Calendar: FC<CalendarProps> = ({ className, ...props }) => {
     );
   };
 
-  const getDaysInMonth = (date: Date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const firstDayOfMonth = new Date(year, month, 1).getDay();
-
-    const days = [];
-    for (let i = 0; i < firstDayOfMonth; i++) {
-      days.push(null);
-    }
-
-    for (let i = 1; i <= daysInMonth; i++) {
-      days.push(new Date(year, month, i));
-    }
-
-    return days;
-  };
-
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
+  const upcomingCalendars = getCalendarsQuery.data?.length
+    ? getCalendarsQuery.data.filter(
+        (e) => new Date(e.start.dateTime) > new Date()
+      )
+    : [];
 
   return (
     <div className="bg-white rounded-2xl shadow-xl p-6 flex-1">
@@ -108,7 +89,11 @@ const Calendar: FC<CalendarProps> = ({ className, ...props }) => {
         selectedDate && day && selectedDate.getDate() === day.getDate()
           ? "bg-blue-100"
           : ""
-      }`}
+      } ${
+              day?.toDateString() == new Date().toDateString()
+                ? "border border-blue-200 "
+                : "no"
+            }`}
           >
             {day?.getDate()}
           </button>
@@ -118,13 +103,26 @@ const Calendar: FC<CalendarProps> = ({ className, ...props }) => {
       {/* Upcoming Meetings */}
       <div className="mt-6 pt-6 border-t border-gray-200">
         <h3 className="text-lg font-semibold mb-4">
-          Upcoming Meetings for {formatDate(selectedDate)}
+          Upcoming Meetings for {formatDescribableDate(selectedDate)}
         </h3>
         <HorizontalScroll className="w-full">
-          {getCalendarsQuery.data &&
-            getCalendarsQuery.data.map((calendar, index) => (
-              <MeetingCard calendar={calendar} key={index} />
-            ))}
+          {upcomingCalendars.length
+            ? upcomingCalendars.map((calendar, index) => (
+                <MeetingCard calendar={calendar} key={index} />
+              ))
+            : getCalendarsQuery.isFetched && (
+                <div className="h-28 ">
+                  {" "}
+                  <p className="text-gray-500 text-sm">
+                    No upcoming meetings are there 😃
+                  </p>
+                </div>
+              )}
+
+          {getCalendarsQuery.isLoading &&
+            new Array(2)
+              .fill(null)
+              .map((_, index) => <MeetingSkeletonCard key={index} />)}
         </HorizontalScroll>
       </div>
 
@@ -132,18 +130,25 @@ const Calendar: FC<CalendarProps> = ({ className, ...props }) => {
       {selectedDate && (
         <div className="mt-6 pt-6 border-t border-gray-200">
           <h3 className="text-lg font-semibold mb-4">
-            Meetings for {formatDate(selectedDate)}
+            Meetings for {formatDescribableDate(selectedDate)}
           </h3>
           <VerticalScroll className="space-y-4" height="45vh">
-            {getCalendarsQuery.data ? (
-              getCalendarsQuery.data.map((calendar, index) => (
-                <MeetingCard calendar={calendar} key={index} />
-              ))
-            ) : (
-              <p className="text-gray-500 text-sm">
-                No meetings scheduled for this day
-              </p>
-            )}
+            {getCalendarsQuery.data?.length
+              ? getCalendarsQuery.data.map((calendar, index) => (
+                  <MeetingCard calendar={calendar} key={index} />
+                ))
+              : getCalendarsQuery.isFetched && (
+                  <div className="h-28 ">
+                    {" "}
+                    <p className="text-gray-500 text-sm">
+                      No meetings scheduled for this day 😃
+                    </p>
+                  </div>
+                )}
+            {getCalendarsQuery.isLoading &&
+              new Array(2)
+                .fill(null)
+                .map((_, index) => <MeetingSkeletonCard key={index} />)}
           </VerticalScroll>
         </div>
       )}

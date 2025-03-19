@@ -1,51 +1,79 @@
-import { MessageSquare, Send } from "lucide-react";
-import { ComponentProps, FC, useState } from "react";
+import useChatAgent, { ChatResponseType } from "@/api_hooks/use-chat-agent";
+import { useMutation, UseMutationResult } from "@tanstack/react-query";
+import { Brain, MessageSquare, Send } from "lucide-react";
+import { ComponentProps, FC, useEffect, useRef, useState } from "react";
+import { CircleLoader } from "react-spinners";
 
 interface AiChatAgentProps extends ComponentProps<"div"> {}
 
 const AiChatAgent: FC<AiChatAgentProps> = () => {
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState<{ text: string; sent: boolean }[]>([
+  const [messages, setMessages] = useState<
+    { text: string; role: "AGENT" | "USER" }[]
+  >([
     {
-      text: "Hi! I'm your meeting assistant. How can I help you today?",
-      sent: false,
+      text: "Hi! I'm Google Calendar Agent. How can I help you today?",
+      role: "AGENT",
     },
   ]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const { createChat } = useChatAgent();
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim()) return;
-
-    setMessages([...messages, { text: message, sent: true }]);
+    setMessages([...messages, { text: message, role: "USER" }]);
     setMessage("");
+    sendMessageMutation.mutate(message);
+    try {
+    } catch (error) {}
+  };
 
-    setTimeout(() => {
+  const sendMessageMutation = useMutation({
+    mutationFn: createChat,
+    onSuccess: (data: ChatResponseType) => {
       setMessages((prev) => [
         ...prev,
         {
-          text: "I'll help you schedule this meeting. Please fill out the form above with your preferred details.",
-          sent: false,
+          text: data.text,
+          role: "AGENT",
         },
       ]);
-    }, 1000);
-  };
+    },
+    onError: (error: any) => {},
+  }) as UseMutationResult<ChatResponseType, Error, string>;
+
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  }, [messages]);
 
   return (
     <div className="bg-white rounded-2xl shadow-xl p-6">
       <div className="flex items-center gap-2 mb-4">
-        <MessageSquare className="w-5 h-5 text-blue-600" />
-        <h2 className="text-lg font-semibold text-gray-900">Chat Assistant</h2>
+        <Brain  className="w-5 h-5 text-blue-600" />
+        <h2 className="text-lg font-semibold text-gray-900">AI Agent</h2>
       </div>
-      <div className="bg-gray-50 rounded-xl p-4 h-[400px] overflow-y-auto mb-4">
+      <div
+        ref={chatContainerRef}
+        className="bg-gray-50 rounded-xl p-4 h-[400px] overflow-y-auto mb-4"
+      >
         <div className="space-y-4">
           {messages.map((msg, index) => (
             <div
               key={index}
-              className={`flex ${msg.sent ? "justify-end" : "justify-start"}`}
+              className={`flex ${
+                msg.role == "USER" ? "justify-end" : "justify-start"
+              }`}
             >
               <div
                 className={`max-w-[80%] px-4 py-2 rounded-xl ${
-                  msg.sent
+                  msg.role == "USER"
                     ? "bg-blue-600 text-white"
                     : "bg-white border border-gray-200 text-gray-700"
                 }`}
@@ -54,6 +82,15 @@ const AiChatAgent: FC<AiChatAgentProps> = () => {
               </div>
             </div>
           ))}
+          {sendMessageMutation.isPending && (
+            <div
+              className={`max-w-[80%] px-4 py-2 rounded-xl text-gray-700 flex items-center gap-2`}
+            >
+              <CircleLoader color="blue" size={20} /> Wait, some magic is happening!
+              🪄🪄🪄
+            </div>
+          )}
+          <div ref={messagesEndRef} />
         </div>
       </div>
       <form onSubmit={handleSendMessage} className="flex gap-2">

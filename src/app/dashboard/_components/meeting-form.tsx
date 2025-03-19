@@ -10,27 +10,43 @@ import {
 } from "@/schemas/create-meeting-schema";
 import { FieldErrors, useForm } from "react-hook-form";
 import { useMutation, UseMutationResult } from "@tanstack/react-query";
-import useCalender from "@/service_hooks/use-calendar";
 import { toast } from "react-toastify";
+import { useCalender } from "@/api_hooks/use-calendar";
 
 interface MeetingFormProps extends ComponentProps<"form"> {}
 
 const MeetingForm: FC<MeetingFormProps> = ({ className, ...props }) => {
-  const [startDate, setStartDate] = useState<string>();
-  const [startTime, setStartTime] = useState<string>();
+  const { createMeeting, getCalendarsQuery, startDateTime } = useCalender();
 
-  const [endDate, setEndDate] = useState<string>();
-  const [endTime, setEndTime] = useState<string>();
+  const localDate = new Date(startDateTime).toISOString().split("T")[0];
+  const localTime = new Date(startDateTime)
+    .toTimeString()
+    .split(" ")[0]
+    .slice(0, 5);
+
+  const [startDate, setStartDate] = useState<string>(localDate);
+  const [startTime, setStartTime] = useState<string>(localTime);
+
+  const [endDate, setEndDate] = useState<string>(localDate);
+  const [endTime, setEndTime] = useState<string>(localTime);
+
+  useEffect(() => {
+    setStartDate(localDate);
+    setStartTime(localTime);
+
+    setEndDate(localDate);
+    setEndTime(localTime);
+  }, [startDateTime]);
 
   const [attendees, setAttendees] = useState<Array<string>>([""]);
 
   useEffect(() => {
     if (startDate && startTime) {
-      setValue("start_time", `${startDate}T${startTime}:00Z`);
+      setValue("start_time", `${startDate}T${startTime}:00`);
     }
 
     if (endDate && endTime) {
-      setValue("end_time", `${endDate}T${endTime}:00Z`);
+      setValue("end_time", `${endDate}T${endTime}:00`);
     }
   }, [startDate, startTime, endDate, endTime]);
 
@@ -46,6 +62,7 @@ const MeetingForm: FC<MeetingFormProps> = ({ className, ...props }) => {
     handleSubmit,
     formState: { isDirty, errors },
     setValue,
+    reset,
   } = useForm<CreateMeetingType>({
     defaultValues: {
       summary: "",
@@ -59,14 +76,16 @@ const MeetingForm: FC<MeetingFormProps> = ({ className, ...props }) => {
     resolver: yupResolver(createMeetingSchema),
   });
 
-  const { createMeeting } = useCalender();
-
   const createMeetingMutation = useMutation({
     mutationFn: createMeeting,
     onSuccess: (data: { status: string; event_id: string }) => {
+      getCalendarsQuery.refetch();
       toast.success(
         "Your meeting have schedule, all participants will be notified soon"
       );
+
+      reset();
+      setAttendees([""]);
     },
     onError: (error: any) => {
       const errorMessage = error.response.data.error;
@@ -111,7 +130,9 @@ const MeetingForm: FC<MeetingFormProps> = ({ className, ...props }) => {
           >
             Timezone
           </label>
-          <TimezoneSelector onchange={(value) => setValue("time_zone", value)} />
+          <TimezoneSelector
+            onchange={(value) => setValue("time_zone", value)}
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -252,10 +273,7 @@ const MeetingForm: FC<MeetingFormProps> = ({ className, ...props }) => {
             htmlFor="description"
             className="block text-sm font-medium text-gray-700 mb-1"
           >
-            <div className="flex items-center gap-2">
-              {/* <Users className="w-4 h-4 text-blue-600" /> */}
-              Description
-            </div>
+            <div className="flex items-center gap-2">Description</div>
           </label>
           <textarea
             id="description"
@@ -277,7 +295,7 @@ const MeetingForm: FC<MeetingFormProps> = ({ className, ...props }) => {
             htmlFor="video-conference"
             className="ms-2 text-sm font-medium text-gray-900"
           >
-            Checked state
+            Video Conference
           </label>
         </div>
 

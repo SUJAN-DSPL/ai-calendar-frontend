@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@/service_hooks/use-auth";
+import { useAuth } from "@/api_hooks/use-auth";
 import { Calendar } from "lucide-react";
 import { ComponentProps, FC } from "react";
 

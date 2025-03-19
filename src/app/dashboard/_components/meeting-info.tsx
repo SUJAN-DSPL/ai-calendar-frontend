@@ -1,35 +1,36 @@
 "use client";
 
-import { ComponentProps, FC, useState } from "react";
+import { ComponentProps, Dispatch, FC, SetStateAction, useState } from "react";
 import {
-  MoreVertical,
-  Edit2,
   Trash2,
   Copy,
-  X,
   Video,
   Phone,
-  ExternalLink,
   ChevronDown,
   MessageSquare,
   Mail,
   ChevronUp,
 } from "lucide-react";
-import { CalendarResponseType } from "@/service_hooks/use-calendar";
+import { useMutation, UseMutationResult } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
+import SubmitButton from "@/components/submit-button";
+import { toast } from "react-toastify";
+import { CalendarResponseType, useCalender } from "@/api_hooks/use-calendar";
 
 interface MeetingInfoProps extends ComponentProps<"div"> {
   calendar: CalendarResponseType;
+  setIsInfoOpen: Dispatch<SetStateAction<boolean>>;
 }
 
 const MeetingInfo: FC<MeetingInfoProps> = ({
   calendar,
+  setIsInfoOpen,
   className,
   ...props
 }) => {
-  const [isGuestListExpanded, setIsGuestListExpanded] = useState(true);
-
-  console.log(calendar);
-
+  console.log(calendar)
+  const [isGuestListExpanded, setIsGuestListExpanded] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
   const colors = [
     "bg-purple-500",
     "bg-pink-500",
@@ -41,8 +42,26 @@ const MeetingInfo: FC<MeetingInfoProps> = ({
     "bg-orange-500",
   ];
 
+  const entryPoint = (calendar?.conferenceData?.entryPoints ?? []).find(
+    (e) => e.entryPointType == "phone"
+  );
+
+  const { deleteMeeting, getCalendarsQuery } = useCalender();
+
+  const deleteMeetingMutation = useMutation({
+    mutationFn: deleteMeeting,
+    onSuccess: () => {
+      getCalendarsQuery.refetch();
+      toast.success("Meeting has been delete successfully");
+      setIsInfoOpen(false);
+    },
+    onError: () => {
+      // toast.error("something we wrong");
+    },
+  }) as UseMutationResult<{ status: string; event_id: string }, Error, string>;
+
   return (
-    <div className=" text-gray-900 rounded-lg w-full">
+    <div className={cn(" text-gray-900 rounded-lg w-full", className)}>
       {/* Header */}
       <div className="flex items-center justify-between p-4">
         <div className="flex-1">
@@ -50,54 +69,102 @@ const MeetingInfo: FC<MeetingInfoProps> = ({
             <div className="w-4 h-4 bg-[#4285f4] rounded-sm"></div>
             <h1 className="text-xl font-medium">{calendar.summary}</h1>
           </div>
+          <p className=" truncate">organizer : {calendar.organizer.email}</p>
         </div>
         <div className="flex items-center gap-2">
-          <button className="p-2 hover:bg-gray-100 rounded-full text-gray-600">
-            <Trash2 size={20} />
-          </button>
+          {!showDelete ? (
+            <button
+              className="p-2 hover:bg-gray-100 rounded-full text-gray-600 cursor-pointer"
+              onClick={() => setShowDelete(true)}
+            >
+              <Trash2 size={20} />
+            </button>
+          ) : (
+            <SubmitButton
+              type="button"
+              isLoading={deleteMeetingMutation.isPending}
+              className="p-2 rounded-full whitespace-nowrap
+          bg-red-400 text-white text-xs cursor-pointer hover:bg-red-400"
+              onClick={() => deleteMeetingMutation.mutate(calendar.id)}
+            >
+              Confirm Delete
+            </SubmitButton>
+          )}
         </div>
       </div>
 
       {/* Date and Time */}
       <div className="px-6 py-2">
-        <p className="text-gray-700">Monday, 17 March • 4:00 – 5:30pm</p>
-        <p className="text-gray-500 text-sm">Every 2 weeks on Monday</p>
+        <p className="text-gray-700">
+          {new Date(calendar.start.dateTime).toDateString()} •{" "}
+          {new Date(calendar.start.dateTime).toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}{" "}
+          –{" "}
+          {new Date(calendar.end.dateTime).toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </p>
+        {calendar.description && (
+          <div
+            className={`text-gray-500 text-sm mt-1  ${
+              calendar.description.length > 50
+                ? "overflow-y-scroll h-[10vh]"
+                : ""
+            }`}
+          >
+            <p dangerouslySetInnerHTML={{ __html: calendar.description }} />
+          </div>
+        )}
       </div>
 
       {/* Google Meet Button */}
-      <div className="px-6 py-3">
-        <button className="flex items-center gap-2 bg-[#1a73e8] text-white px-6 py-2 rounded-full font-medium hover:bg-[#1557b0] transition-colors">
-          <Video size={20} />
-          Join with Google Meet
-        </button>
-        <div className="mt-2 text-sm text-[#1a73e8]">
-          meet.google.com/kdm-npyy-imq
+      {calendar.hangoutLink && (
+        <div className="px-6 py-3">
+          <a
+            target="_blank"
+            href={calendar.hangoutLink}
+            className="flex w-[16rem] cursor-pointer items-center gap-2 bg-[#1a73e8] text-white px-6 py-2 rounded-full font-medium hover:bg-[#1557b0] transition-colors"
+          >
+            <Video size={20} />
+            Join with Google Meet
+          </a>
+          <div className="mt-2 text-sm text-[#1a73e8]">
+            {calendar.hangoutLink}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Phone Details */}
-      <div className="px-6 py-2">
-        <div className="flex items-center gap-2 text-[#1a73e8] mb-1">
-          <Phone size={16} />
-          <span>Join by phone</span>
+      {entryPoint && (
+        <div className="px-6 py-2">
+          <div className="flex items-center gap-2 text-[#1a73e8] mb-1">
+            <Phone size={16} />
+            <span>Join by phone</span>
+          </div>
+          <p className="text-gray-700 text-sm">
+            ({entryPoint?.regionCode}) {entryPoint?.label} PIN:{" "}
+            {entryPoint?.pin}#
+          </p>
+          <button className="text-[#1a73e8] text-sm mt-1 hover:text-[#1557b0]">
+            More phone numbers
+          </button>
         </div>
-        <p className="text-gray-700 text-sm">
-          (US) +1 815-905-1302 PIN: 717 166 527#
-        </p>
-        <button className="text-[#1a73e8] text-sm mt-1 hover:text-[#1557b0]">
-          More phone numbers
-        </button>
-      </div>
+      )}
 
       {/* Location */}
       <div className="px-6 py-2">
-        <p className="text-gray-700">Hyderabad-1-ANIMIGO (10)</p>
+        <p className="text-gray-700">
+          location: {calendar.location ?? "unknown"}
+        </p>
       </div>
 
       {/* Guests */}
       <div className="px-6 py-2">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-gray-700">21 guests</h2>
+          <h2 className="text-gray-700">{calendar.attendees.length} guests</h2>
           <div className="flex gap-2">
             <button className="p-2 hover:bg-gray-100 rounded-full text-gray-600">
               <Copy size={18} />
@@ -109,7 +176,7 @@ const MeetingInfo: FC<MeetingInfoProps> = ({
               <Mail size={18} />
             </button>
             <button
-              className="p-2 hover:bg-gray-100 rounded-full text-gray-600 transition-transform"
+              className="cursor-pointer p-2 hover:bg-gray-100 rounded-full text-gray-600 transition-transform"
               onClick={() => setIsGuestListExpanded(!isGuestListExpanded)}
             >
               {isGuestListExpanded ? (
@@ -120,8 +187,18 @@ const MeetingInfo: FC<MeetingInfoProps> = ({
             </button>
           </div>
         </div>
-        <p className="text-gray-500 text-sm">5 yes (1 in a meeting room)</p>
-        <p className="text-gray-500 text-sm">16 awaiting</p>
+        <p className="text-gray-500 text-sm">
+          {
+            calendar.attendees.filter((e) => e.responseStatus == "accepted")
+              .length
+          }{" "}
+          Yes,{" "}
+          {
+            calendar.attendees.filter((e) => e.responseStatus == "needsAction")
+              .length
+          }{" "}
+          awaiting
+        </p>
 
         {/* Guest List */}
         <div

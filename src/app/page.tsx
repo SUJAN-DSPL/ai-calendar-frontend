@@ -13,7 +13,7 @@ import {
 import GoogleLoginButton, {
   GoogleIcon,
 } from "@/components/google-login-button";
-import { useAuth } from "@/service_hooks/use-auth";
+import { useAuth } from "@/api_hooks/use-auth";
 import { useRouter } from "next/navigation";
 
 export default function Home() {

@@ -14,10 +14,12 @@ const ModalContext = createContext<{
   setIsOpen: (state: boolean) => void;
 } | null>(null);
 
-interface ModelProps extends ComponentProps<"div"> {}
+interface ModelProps extends ComponentProps<"div"> {
+  open?: boolean
+}
 
-export const Modal: FC<ModelProps> = ({ className, children, ...props }) => {
-  const [isOpen, setIsOpen] = useState(false);
+export const Modal: FC<ModelProps> = ({open=false, className, children, ...props }) => {
+  const [isOpen, setIsOpen] = useState(open);
   return (
     <ModalContext.Provider value={{ isOpen, setIsOpen }}>
       <div className={cn("", className)} {...props}>
