@@ -8,7 +8,7 @@ export type ChatResponseType = {
 };
 
 const useChatAgent = () => {
-  const apiEndPoint = process.env.NEXT_PUBLIC_AUTH_API_URL;
+  const apiEndPoint = process.env.NEXT_PUBLIC_BACKEND_API;
 
   const createChat = async (query: string): Promise<ChatResponseType> => {
     try {

@@ -58,7 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const loginUser = async () => {
     setIsLoading(true);
     const redirectUrl = encodeURIComponent(
-      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
+      `${process.env.NEXT_PUBLIC_BACKEND_API}/dashboard`
     );
     window.location.href = `${apiEndPoint}/api/auth/google/profile?redirect=${redirectUrl}`;
   };
@@ -66,14 +66,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const loginGoogleCalendar = async () => {
     setIsLoading(true);
     const redirectUrl = encodeURIComponent(
-      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
+      `${process.env.NEXT_PUBLIC_BACKEND_API}/dashboard`
     );
 
     window.location.href = `${apiEndPoint}/api/auth/google/calendar?redirect=${redirectUrl}`;
   };
 
   const logoutUser = async () => {
-    const redirectUrl = encodeURIComponent(process.env.NEXT_PUBLIC_APP_URL!);
+    const redirectUrl = encodeURIComponent(process.env.NEXT_PUBLIC_BACKEND_API!);
     window.location.href = `${apiEndPoint}/api/auth/logout?redirect=${redirectUrl}`;
   };
 

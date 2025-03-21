@@ -108,7 +108,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
     queryFn: () => getMeetings(startDateTime, endDateTime),
   }) as UseQueryResult<Array<CalendarResponseType>, Error>;
 
-  const apiEndPoint = process.env.NEXT_PUBLIC_AUTH_API_URL;
+  const apiEndPoint = process.env.NEXT_PUBLIC_BACKEND_API;
 
   const createMeeting = async (data: CreateMeetingType) => {
     try {

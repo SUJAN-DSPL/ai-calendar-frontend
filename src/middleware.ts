@@ -25,7 +25,7 @@ export async function middleware(req: NextRequest) {
   try {
     calendarStatus = (
       await axios.get(
-        `${process.env.NEXT_PUBLIC_AUTH_API_URL}/api/auth/google/calendar_status`,
+        `${process.env.NEXT_PUBLIC_BACKEND_API}/api/auth/google/calendar_status`,
         { headers: { auth_token: token }, withCredentials: true }
       )
     ).data.status;
