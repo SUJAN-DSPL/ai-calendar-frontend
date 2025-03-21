@@ -1,3 +1,4 @@
+import { useCalender } from "@/api_hooks/use-calendar";
 import useChatAgent, { ChatResponseType } from "@/api_hooks/use-chat-agent";
 import { useMutation, UseMutationResult } from "@tanstack/react-query";
 import { Brain, MessageSquare, Send } from "lucide-react";
@@ -7,6 +8,8 @@ import { CircleLoader } from "react-spinners";
 interface AiChatAgentProps extends ComponentProps<"div"> {}
 
 const AiChatAgent: FC<AiChatAgentProps> = () => {
+  const { getCalendarsQuery } = useCalender();
+
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<
     { text: string; role: "AGENT" | "USER" }[]
@@ -40,6 +43,8 @@ const AiChatAgent: FC<AiChatAgentProps> = () => {
           role: "AGENT",
         },
       ]);
+
+      getCalendarsQuery.refetch()
     },
     onError: (error: any) => {},
   }) as UseMutationResult<ChatResponseType, Error, string>;
@@ -56,7 +61,7 @@ const AiChatAgent: FC<AiChatAgentProps> = () => {
   return (
     <div className="bg-white rounded-2xl shadow-xl p-6">
       <div className="flex items-center gap-2 mb-4">
-        <Brain  className="w-5 h-5 text-blue-600" />
+        <Brain className="w-5 h-5 text-blue-600" />
         <h2 className="text-lg font-semibold text-gray-900">AI Agent</h2>
       </div>
       <div
@@ -86,8 +91,8 @@ const AiChatAgent: FC<AiChatAgentProps> = () => {
             <div
               className={`max-w-[80%] px-4 py-2 rounded-xl text-gray-700 flex items-center gap-2`}
             >
-              <CircleLoader color="blue" size={20} /> Wait, some magic is happening!
-              🪄🪄🪄
+              <CircleLoader color="blue" size={20} /> Wait, some magic is
+              happening! 🪄🪄🪄
             </div>
           )}
           <div ref={messagesEndRef} />

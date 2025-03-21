@@ -27,31 +27,30 @@ const Page = () => {
               <BrainCircuit className="w-8 h-8 text-white" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            AI Calendar
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">AI Calendar</h1>
           <p className="text-gray-600">
             Schedule and manage your virtual meetings effortlessly
           </p>
         </div>
 
         {/* tools */}
-        <div className="grid grid-cols-[67%_33%] gap-6">
-          <CalendarProvider
-            className="grid grid-cols-2 gap-6"
-            defaultStartDateTime={`${formatStandardizedDate(new Date())}T00:00:00Z`}
-            defaultEndDateTime={`${formatStandardizedDate(new Date())}T23:59:59Z`}
-          >
-            <Calendar />
-            <MeetingForm />
-          </CalendarProvider>
+        <CalendarProvider
+          defaultStartDateTime={`${formatStandardizedDate(new Date())}T00:00:00Z`}
+          defaultEndDateTime={`${formatStandardizedDate(new Date())}T23:59:59Z`}
+        >
+          <div className="grid grid-cols-[67%_33%] gap-6">
+            <div className="grid grid-cols-2 gap-6">
+              <Calendar />
+              <MeetingForm />
+            </div>
 
-          <div className="space-y-6 ">
-            <AiChatAgent />
-            <Tips />
-            <Features />
+            <div className="space-y-6 ">
+              <AiChatAgent />
+              <Tips />
+              <Features />
+            </div>
           </div>
-        </div>
+        </CalendarProvider>
       </div>
     </div>
   );
